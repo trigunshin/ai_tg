@@ -13,8 +13,19 @@ const initialState = {
   'fighter_career': 116
 };
 
+const item_slots = ['Hat', 'Pants', 'Shoes', 'Gloves', 'Skin'];
+
+function get_reducer_labels(slot_name) {
+  return [
+    slot_name+'_tier_input',
+    slot_name+'_green_input',
+    slot_name+'_orange_input',
+    slot_name+'_purple_input'
+  ];
+}
+
 function reducer(state=initialState, action) {
-  const reducers = {
+  let reducers = {
     'UPDATE_MANA': (state, action) => {
       return Object.assign({}, state, {'base_mana': action.value});
     },
@@ -28,20 +39,87 @@ function reducer(state=initialState, action) {
       return Object.assign({}, state, {'fighter_career': action.value});
     }
   };
+  // item slots & input labels
+  _.each(item_slots, (slot) => {
+    _.each(get_reducer_labels(slot), (label) => {
+      reducers[label] = (state, action) => {
+        const ret = {};
+        ret[action.type] = action.value;
+        return Object.assign({}, state, ret);
+      };
+    });
+  });
+
   if (reducers[action.type] === void 0) return state;
   return reducers[action.type](state, action);
 }
 let store = createStore(reducer);
-
-function select(state) {
+function state_filter(state) {
   return state;
 }
 
 
-
 const TextInput = React.createClass({
+  propTypes: {
+    id: React.PropTypes.string.isRequired,
+    default_value: React.PropTypes.string.isRequired
+  },
   onChange() {
-    console.info('changing', this.props.action_type);
+    const action = {
+      'type': this.props.id,
+      'value': this.getData()
+    };
+    store.dispatch(action);
+  },
+  getData() {
+      return ReactDOM.findDOMNode(this.refs.localValue).value;
+  },
+  render() {
+    return (
+      <div>
+        <div className="col-sm-2">
+          <input type="text" className="form-control" id={this.props.id} defaultValue={this.props.default_value} ref='localValue' onChange={this.onChange}/>
+        </div>
+      </div>
+    );
+  }
+});
+
+const SelectInput = React.createClass({
+  propTypes: {
+    id: React.PropTypes.string.isRequired,
+    selectOptions: React.PropTypes.array.isRequired
+  },
+  onChange() {
+    const action = {
+      'type': this.props.id,
+      'value': this.getData()
+    };
+    store.dispatch(action);
+  },
+  getData() {
+    return ReactDOM.findDOMNode(this.refs.localValue).value;
+  },
+  render() {
+    return (
+      <div className='col-sm-2'>
+        <select id={this.props.inputId} className='form-control input-sm' ref='localValue' onChange={this.onChange}>
+          {
+            this.props.selectOptions.map((option) => <option key={option} value={option}>{option}</option>)
+          }
+        </select>
+      </div>
+    );
+  }
+});
+
+const LabelTextInput = React.createClass({
+  propTypes: {
+    id: React.PropTypes.string.isRequired,
+    displayName: React.PropTypes.string.isRequired,
+    action_type: React.PropTypes.string.isRequired
+  },
+  onChange() {
     const action = {
       'type': this.props.action_type,
       'value': this.getData()
@@ -49,7 +127,6 @@ const TextInput = React.createClass({
     store.dispatch(action);
   },
   getData() {
-      // only handle single file case for now
       return ReactDOM.findDOMNode(this.refs.localValue).value;
   },
   render() {
@@ -68,69 +145,23 @@ const EquipmentLine = React.createClass({
   propTypes: {
     slot: React.PropTypes.string.isRequired
   },
-  getData() {
-    return {
-      'slot': this.props.slot,
-      'tier': ReactDOM.findDOMNode(this.refs.tier).value,
-  },
-  onChange() {
-    /*console.info('changing', this.props.action_type);
-    const action = {
-      'type': this.props.action_type,
-      'value': 
-    };
-    store.dispatch(action);
-    */
-  },
   render() {
+    const slot = this.props.slot;
+    // slot+... is tightly tied to get_reducer_labels
     return (
       <div className="row form-inline">
-        <div className="col-sm-1">{this.props.slot}</div>
-        <div className='col-sm-2'>
-          <input ref='tier' className='input-sm form-control' type="text" id='hat_tier_input' defaultValue='57' onChange={this.onChange}/>
-        </div>
-        <div className='col-sm-2'>
-          <SelectInput ref='green' selectOptions={_.keys(green)} inputId={this.props.slot+'_green_select'} />
-        </div>
-        <div className='col-sm-2'>
-          <SelectInput ref='orange' selectOptions={_.keys(orange)} inputId={this.props.slot+'_orange_select'} />
-        </div>
-        <div className='col-sm-2'>
-          <SelectInput ref='purple' selectOptions={_.keys(purple)} inputId={this.props.slot+'_purple_select'} />
-        </div>
+        <div className="col-sm-1">{slot}</div>
+
+        <TextInput id={slot+'_tier_input'} default_value='57' />
+        <SelectInput id={slot+'_green_input'} selectOptions={_.keys(green)} />
+        <SelectInput id={slot+'_orange_input'} selectOptions={_.keys(orange)} />
+        <SelectInput id={slot+'_purple_input'} selectOptions={_.keys(purple)}  />
       </div>
     );
   }
 });
 
-const SelectInput = React.createClass({
-  getData() {
-    return ReactDOM.findDOMNode(this.refs.localValue).value;
-  },
-  render() {
-    return (
-      <div className='col-sm-2'>
-        <select id={this.props.inputId} className='form-control input-sm' ref='localValue'>
-          {
-            this.props.selectOptions.map((option) => <option key={option} value={option}>{option}</option>)
-          }
-        </select>
-      </div>
-    );
-  }
-});
-
-const Item = React.createClass({
-  render() {
-    return (
-      <div>
-        <TextInput />
-      </div>
-    );
-  }
-});
-
-const Character = connect(select)(React.createClass({
+const Character = connect(state_filter)(React.createClass({
     getDefaultProps() {
         return {
             inputs: {
@@ -158,6 +189,8 @@ const Character = connect(select)(React.createClass({
         }
     },
     calculateMana() {
+      console.log('state');
+      console.log(store.getState());
       const base = parseFloat(this.props.base_mana);
       let base_mult = 1;
       base_mult = base_mult + this.props.fighter_career * .001;
@@ -170,12 +203,12 @@ const Character = connect(select)(React.createClass({
         <div>
           <form className='form-horizontal'>
             <div className="form-group form-group-sm">
-              <TextInput {...this.props.inputs.health} defaultValue={store.getState().base_health} />
-              <TextInput {...this.props.inputs.mana} defaultValue={store.getState().base_mana} />
+              <LabelTextInput {...this.props.inputs.health} defaultValue={store.getState().base_health} />
+              <LabelTextInput {...this.props.inputs.mana} defaultValue={store.getState().base_mana} />
             </div>
             <div className="form-group form-group-sm">
-              <TextInput {...this.props.inputs.fighter_career_input} defaultValue={store.getState().fighter_career} />
-              <TextInput {...this.props.inputs.mana_boost} defaultValue={store.getState().mana_boost} />
+              <LabelTextInput {...this.props.inputs.fighter_career_input} defaultValue={store.getState().fighter_career} />
+              <LabelTextInput {...this.props.inputs.mana_boost} defaultValue={store.getState().mana_boost} />
             </div>
 
             <div className="row">
@@ -186,6 +219,11 @@ const Character = connect(select)(React.createClass({
               <div className='col-sm-2'><b>Purple</b></div>
             </div>
             <EquipmentLine slot='Hat'/>
+            <EquipmentLine slot='Pants'/>
+            <EquipmentLine slot='Shoes'/>
+            <EquipmentLine slot='Gloves'/>
+            <EquipmentLine slot='Shirt'/>
+            <EquipmentLine slot='Skin'/>
           </form>
           <Statistic displayName='Mana' value={this.calculateMana()} />
         </div>
