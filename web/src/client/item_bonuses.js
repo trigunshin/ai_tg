@@ -1,32 +1,32 @@
 const green = {
-	'Exp': .5,
-  'Coin': 1,
-  'Pixel': 1,
-  'Reward': .5,  // case fails here
-  'Spawn Rate': .2,
-  'Drop Rate': 1,
-  'Rare Rate': 1,
-  'Epic Rate': 2.5
+	'Exp': .005,
+  'Coin': .01,
+  'Pixel': .01,
+  'Reward': .005,  // case fails here
+  'Spawn Rate': .002,
+  'Drop Rate': .01,
+  'Rare Rate': .01,
+  'Epic Rate': .025
 };
 
 const weapon_orange = {
-  'Rage Attack': 1.5,
-  'Boss Damage': 2,
-  'Non-Boss Damage': 2,
+  'Rage Attack': .015,
+  'Boss Damage': .02,
+  'Non-Boss Damage': .02,
 };
 
 const orange = {
-  'Attack': 1,
-  'Mastery': 1,
-  'MP': 3,
+  'Attack': .01,
+  'Mastery': .01,
+  'MP': .03,
   'Rage Depletion': -1,  // neg pct
   'Autosteal': 1,  // not a pct
-  'Accuracy': 1.5,
-  'Ignore Defense': 1,
-  'Hit Chance': .5,
-  'Dodge Chance': .5,
-  'Evasion': 1.5,
-  'MP Regen': 25
+  'Accuracy': .015,
+  'Ignore Defense': .01,
+  'Hit Chance': .005,
+  'Dodge Chance': .005,
+  'Evasion': .015,
+  'MP Regen': .025
 };
 
 const purple = {

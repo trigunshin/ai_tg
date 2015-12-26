@@ -13,7 +13,7 @@ const initialState = {
   'fighter_career': 116
 };
 
-const item_slots = ['Hat', 'Pants', 'Shoes', 'Gloves', 'Skin'];
+const item_slots = ['Hat', 'Pants', 'Shoes', 'Gloves', 'Skin', 'Necklace', 'Earrings', 'Trinket', 'Medal'];
 
 function get_reducer_labels(slot_name) {
   return [
@@ -189,13 +189,24 @@ const Character = connect(state_filter)(React.createClass({
         }
     },
     calculateMana() {
-      console.log('state');
-      console.log(store.getState());
-      const base = parseFloat(this.props.base_mana);
+      let local_state = store.getState();
+      let base_mana = parseFloat(this.props.base_mana);
       let base_mult = 1;
       base_mult = base_mult + this.props.fighter_career * .001;
       base_mult = base_mult + this.props.mana_boost * .05;
-      return base * base_mult;
+
+
+      _.each(item_slots, (slot) => {
+        const tier = parseInt(local_state[slot+'_tier_input']);
+        if(local_state[slot+'_orange_input'] === 'MP') {
+          base_mult = base_mult + tier * orange['MP'];
+        }
+        if(local_state[slot+'_purple_input'] === 'MaxMP') {
+          base_mana = base_mana + tier * purple['MaxMP'];
+        }
+      });
+
+      return base_mana * base_mult;
     },
     render() {
       return (
@@ -218,12 +229,11 @@ const Character = connect(state_filter)(React.createClass({
               <div className='col-sm-2'><b>Orange</b></div>
               <div className='col-sm-2'><b>Purple</b></div>
             </div>
-            <EquipmentLine slot='Hat'/>
-            <EquipmentLine slot='Pants'/>
-            <EquipmentLine slot='Shoes'/>
-            <EquipmentLine slot='Gloves'/>
-            <EquipmentLine slot='Shirt'/>
-            <EquipmentLine slot='Skin'/>
+            {
+              _.map(item_slots, (slot) => {
+                return <EquipmentLine slot={slot} key={slot} />
+              })
+            }
           </form>
           <Statistic displayName='Mana' value={this.calculateMana()} />
         </div>
