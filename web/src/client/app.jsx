@@ -296,7 +296,7 @@ const Character = connect(state_filter)(React.createClass({
           base_mult = base_mult + tier * orange['MP'];
         }
         if(local_state[slot+'_purple_input'] === 'MaxMP') {
-          base_mana = base_mana + tier * purple['MaxMP'];
+          base_mana = base_mana + Math.pow(tier, 2) * purple['MaxMP'];
         }
       });
 
