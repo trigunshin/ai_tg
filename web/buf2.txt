@@ -1,0 +1,75 @@
+
+
+
+
+
+
+
+Base:
+label: value
+
+AITG:
+  base char stats:
+    atk
+    def
+    health
+    mana: 360000
+    acc
+    evasion
+
+  IA: ...
+  RING:
+    mana: 250% max, 4000% regen
+
+  equips:
+    bonuses:
+      A
+        XP
+        PX
+        COIN
+        DROP
+        SPAWN
+        ERATE
+        RRATE
+      B
+        ATK%
+        MPREG
+        HIT
+        DOJ
+
+      C
+        MP
+        ACC
+        ATKP
+    types:
+      weapon
+      secondary
+      robacon
+
+      skin
+      gloves
+      hat
+      pants
+      shirt
+      shoes
+
+      trinket
+      pendant
+      earrings
+      medal
+
+
+INPUTS:
+  fighter career: return 1 + (lvl * .001)
+
+  item:
+    label (name)
+    tier (text input)
+    3 dropdowns
+
+
+calculateStat:
+  check equipment slots, etc;
+    specific per-stat fn forea stat
+
+
