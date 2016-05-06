@@ -4,9 +4,12 @@ import { createStore } from 'redux';
 import { Provider, connect } from 'react-redux';
 import {green, orange, weapon_orange, purple} from 'item_bonuses.js';
 import _ from 'lodash';
+import $ from 'jquery';
 
 
 const initialState = {
+  'save_file_data': 'paste contents here',
+  'save_json_data': {},
   'base_health': 900000,
   'base_mana': 360000,
   'mana_boost': 0,
@@ -26,6 +29,12 @@ function get_reducer_labels(slot_name) {
 
 function reducer(state=initialState, action) {
   let reducers = {
+    'UPDATE_SAVE_FILE': (state, action) => {
+      return Object.assign({}, state, {'save_file_data': action.value});
+    },
+    'UPDATE_SAVE_DATA': (state, action) => {
+      return Object.assign({}, state, {'save_json_data': action.value});
+    },
     'UPDATE_MANA': (state, action) => {
       return Object.assign({}, state, {'base_mana': action.value});
     },
@@ -58,6 +67,85 @@ function state_filter(state) {
   return state;
 }
 
+const FileInput = React.createClass({
+    propTypes: {
+        labelText: React.PropTypes.string.isRequired,
+        errorText: React.PropTypes.string.isRequired,
+        inputId: React.PropTypes.string.isRequired,
+        inputText: React.PropTypes.string.isRequired,
+        helpText: React.PropTypes.string.isRequired,
+        name: React.PropTypes.string
+    },
+    // http://codepen.io/scobban/pen/XmxmwE
+    getInitialState() {
+        return {
+            fileText: this.props.initialFileText
+        };
+    },
+    getDefaultProps() {
+        return {
+            initialFileText: 'No file chosen'
+        };
+    },
+    getData() {
+        // only handle single file case for now
+        const file_data = ReactDOM.findDOMNode(this.refs.localValue).files[0];
+        console.info(file_data);
+        const ret = new FormData();
+        ret.append('file', file_data);
+
+        $.ajax({
+            url: 'https://decode-sol.herokuapp.com/decode',
+            data: ret,
+            method: 'POST',
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: (data) => {
+              const action = {
+                'type': 'UPDATE_SAVE_DATA',
+                'value': data.data
+              };
+              store.dispatch(action);
+            },
+            error: (xhr, text_status, error) => {console.info(text_status, error);},
+        });
+
+        return ReactDOM.findDOMNode(this.refs.localValue).files[0];
+    },
+    handleInputChange() {
+        //don't run in case of IE8/9
+        if (!$('html').hasClass('lte-ie9')) {
+            this.setState({fileText: this.getData().name});
+        }
+    },
+    handleButtonClick(e) {
+        e.preventDefault();
+        ReactDOM.findDOMNode(this.refs.localValue).click();
+    },
+    render() {
+        return (
+            <div className={this.props.errorText && this.props.errorText.length ? 'form-group has-error has-feedback' : 'form-group'}>
+                <label className='control-label' htmlFor={this.props.inputId}>{this.props.labelText}</label>
+                <p className='small m-b-xs'>{this.props.helpText}</p>
+                <span className='validation-icon-right'>
+                    <input id={this.props.inputId} name={this.props.name} className='hidden upload-input visible-lte-ie9-inline' type='file' ref='localValue' onChange={this.handleInputChange}></input>
+                    <button id='resumeFileButton' className='btn btn-primary btn-sm hidden-lte-ie9' onClick={this.handleButtonClick}>Choose file</button>
+                    {this.props.errorText &&
+                        <Glyphicon name='exclamation-sign' extraClassName='form-control-feedback'/>
+                    }
+                </span>
+                <span className='uploaded-file-name hidden-lte-ie9' id='swapText'>{this.state.fileText}</span>
+                {this.props.errorText &&
+                    <span className='sr-only'>(warning)</span>
+                }
+                {this.props.errorText &&
+                    <span className='help-block'>{this.props.errorText}</span>
+                }
+            </div>
+        );
+    }
+});
 
 const TextInput = React.createClass({
   propTypes: {
@@ -125,6 +213,7 @@ const LabelTextInput = React.createClass({
       'value': this.getData()
     };
     store.dispatch(action);
+
   },
   getData() {
       return ReactDOM.findDOMNode(this.refs.localValue).value;
@@ -165,6 +254,11 @@ const Character = connect(state_filter)(React.createClass({
     getDefaultProps() {
         return {
             inputs: {
+              'save': {
+                'inputId': 'save_input',
+                'labelText': 'Save file (.sol)',
+                'action_type': 'UPDATE_SAVE'
+              },
               'health': {
                 'id': 'health_input',
                 'displayName': 'Health',
@@ -208,17 +302,26 @@ const Character = connect(state_filter)(React.createClass({
 
       return base_mana * base_mult;
     },
+    getFighterCareer() {
+      if (store.getState().save_json_data.careerLevel) {
+        console.info(store.getState().save_json_data.careerLevel);
+        return store.getState().save_json_data.careerLevel[3];
+      } else return 0;
+    },
     render() {
       return (
         // slot, select/input, grn,oj,pur
         <div>
-          <form className='form-horizontal'>
+          <form className='form-horizontal' encType='multipart/form-data'>
+            <div className="form-group form-group-sm">
+              <FileInput {...this.props.inputs.save} defaultValue={store.getState().save_file_data} />
+            </div>
             <div className="form-group form-group-sm">
               <LabelTextInput {...this.props.inputs.health} defaultValue={store.getState().base_health} />
               <LabelTextInput {...this.props.inputs.mana} defaultValue={store.getState().base_mana} />
             </div>
             <div className="form-group form-group-sm">
-              <LabelTextInput {...this.props.inputs.fighter_career_input} defaultValue={store.getState().fighter_career} />
+              <LabelTextInput {...this.props.inputs.fighter_career_input} defaultValue={this.getFighterCareer()} />
               <LabelTextInput {...this.props.inputs.mana_boost} defaultValue={store.getState().mana_boost} />
             </div>
 
@@ -235,6 +338,7 @@ const Character = connect(state_filter)(React.createClass({
               })
             }
           </form>
+          <Statistic displayName='Fighter Career' value={this.getFighterCareer()} />
           <Statistic displayName='Mana' value={this.calculateMana()} />
         </div>
       );

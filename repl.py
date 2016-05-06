@@ -76,6 +76,7 @@ def rapid_idle():
 	pyautogui.PAUSE = PAUSE
 	while True:
 		pyautogui.press('s')
+		pyautogui.press('v')
 		# pyautogui.press('w')
 		for i in range(15):
 			pyautogui.press('x')
